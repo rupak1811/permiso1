@@ -14,5 +14,3 @@ server/config/*.json
 server/scripts
 server/node_modules
 client/node_modules
-.vercel
-
