@@ -1,0 +1,323 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Public Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #0a2540 0%, #1f3b58 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease-in-out infinite;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.light body, body.light {
+  background: linear-gradient(135deg, #f8fafc 0%, #e6edf5 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 16s ease-in-out infinite;
+}
+
+/* Light mode text overrides for better readability */
+.light .text-white { color: #0a2540 !important; }
+.light .text-gray-300 { color: #334155 !important; }
+.light .text-gray-400 { color: #475569 !important; }
+.light .text-gray-500 { color: #64748b !important; }
+.light .text-gray-200 { color: #1f2937 !important; }
+
+/* Light mode glass elements */
+.light .glass-card { color: #0a2540; }
+.light .glass-button { color: #0a2540; }
+.light .glass-input { color: #0a2540; }
+.light .glass-input::placeholder { color: #64748b; }
+.light .glass-button.border-2 { border-color: rgba(10, 37, 64, 0.2) !important; }
+.light .border-white\/20 { border-color: rgba(10, 37, 64, 0.12) !important; }
+.light .border-white\/30 { border-color: rgba(10, 37, 64, 0.18) !important; }
+.light .hover\:bg-white\/10:hover { background-color: rgba(10, 37, 64, 0.06) !important; }
+.light .bg-white\/10 { background-color: rgba(10, 37, 64, 0.06) !important; }
+.light .bg-white\/20 { background-color: rgba(10, 37, 64, 0.1) !important; }
+
+html { scroll-behavior: smooth; }
+
+/* Logo Glow Effect */
+.hexagon-outline {
+  transition: all 0.3s ease;
+}
+
+.logo-wordmark {
+  transition: all 0.3s ease;
+}
+
+.light body, body.light {
+  background: linear-gradient(135deg, #eef2f6 0%, #d9e3f0 100%);
+  color: #0a2540;
+}
+
+/* Glassmorphism base styles */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 40px 0 rgba(10, 37, 64, 0.35);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.light .glass, .glass.light {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(10, 37, 64, 0.08);
+  box-shadow: 0 8px 40px 0 rgba(10, 37, 64, 0.15);
+}
+
+.glass-card {
+  @apply glass rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+}
+
+.glass-button {
+  @apply glass rounded-lg px-6 py-3 font-medium text-white hover:bg-white/20 transition-all duration-300 border border-white/30;
+}
+
+.glass-input {
+  @apply glass rounded-lg px-4 py-3 text-white placeholder-gray-300 border border-white/20 focus:border-white/40 focus:outline-none transition-all duration-300;
+}
+
+/* Gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, #0a2540 0%, #1f3b58 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #0046ad 0%, #b22234 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+}
+
+/* Light theme gradient */
+.gradient-light {
+  background: linear-gradient(135deg, #f8fafc 0%, #e6edf5 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Neon glow effects */
+.neon-blue {
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.35), 0 0 40px rgba(37, 99, 235, 0.25);
+}
+
+.neon-pink {
+  box-shadow: 0 0 20px rgba(178, 34, 52, 0.35), 0 0 40px rgba(178, 34, 52, 0.25);
+}
+
+.neon-green {
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.35), 0 0 40px rgba(14, 165, 233, 0.25);
+}
+
+.logo-core {
+  border-radius: 28px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.light .logo-core {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.logo-core svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.light .logo-core svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.logo-wordmark {
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: #dbeafe;
+  text-shadow:
+    0 0 10px rgba(125, 211, 252, 0.6),
+    0 2px 12px rgba(15, 23, 42, 0.7);
+  white-space: nowrap;
+}
+
+.light .logo-wordmark {
+  color: #0a2540;
+  text-shadow:
+    0 0 10px rgba(59, 130, 246, 0.35),
+    0 1px 4px rgba(15, 23, 42, 0.15);
+}
+
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Loading animations */
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
+/* Animated gradient background */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Light mode subtle water glass overlay */
+.water-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.35;
+  animation: waterDrift 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes waterDrift {
+  0% { transform: translate3d(0,0,0); }
+  50% { transform: translate3d(10px,6px,0); }
+  100% { transform: translate3d(0,0,0); }
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Text gradients */
+.text-gradient {
+  background: linear-gradient(135deg, #2a6ba4 0%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-accent {
+  background: linear-gradient(135deg, #0046ad 0%, #2a6ba4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status indicators */
+.status-draft {
+  @apply bg-gray-500 text-white;
+}
+
+.status-submitted {
+  @apply bg-blue-500 text-white;
+}
+
+.status-under-review {
+  @apply bg-yellow-500 text-white;
+}
+
+.status-approved {
+  @apply bg-green-500 text-white;
+}
+
+.status-rejected {
+  @apply bg-red-500 text-white;
+}
+
+.status-withdrawn {
+  @apply bg-gray-400 text-white;
+}
+
+/* Priority indicators */
+.priority-low {
+  @apply bg-green-100 text-green-800 border-green-200;
+}
+
+.priority-medium {
+  @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+}
+
+.priority-high {
+  @apply bg-orange-100 text-orange-800 border-orange-200;
+}
+
+.priority-urgent {
+  @apply bg-red-100 text-red-800 border-red-200;
+}
+
+/* Auto-scrolling horizontal carousel animation */
+@keyframes scroll-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 1rem));
+  }
+}
+
+.animate-scroll-horizontal {
+  animation: scroll-horizontal 30s linear infinite;
+  display: flex;
+  will-change: transform;
+}
+
+.animate-scroll-horizontal:hover {
+  animation-play-state: paused;
+}
+
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-horizontal {
+    animation: none;
+  }
+}
