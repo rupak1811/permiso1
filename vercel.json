@@ -16,7 +16,7 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
       "src": "/api/(.*)",
       "dest": "/api/[...path]"
