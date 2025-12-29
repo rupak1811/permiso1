@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install && cd server && npm install && cd ../client && npm install",
+  "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
   "rewrites": [
     {
