@@ -13,13 +13,13 @@ const PORT = process.env.PORT || 5000;
 
 // Initialize Firestore
 const db = initFirestore();
-if (!db) {
+if (!db && process.env.NODE_ENV !== 'production') {
   console.warn('⚠️  Firestore not initialized. Database operations will fail.');
 }
 
 // Initialize GCP Storage
 const storage = initGCPStorage();
-if (!storage) {
+if (!storage && process.env.NODE_ENV !== 'production') {
   console.warn('⚠️  GCP Storage not initialized. File uploads will fail.');
 }
 
@@ -61,8 +61,16 @@ app.use('/api/admin', require('./routes/admin'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  // Only log full stack in development
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(err.stack);
+  } else {
+    console.error('Error:', err.message);
+  }
+  res.status(err.status || 500).json({ 
+    message: err.message || 'Something went wrong!',
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
 });
 
 // Firestore is initialized above
@@ -113,7 +121,9 @@ if (!isVercel) {
     emit: () => {}
   };
   app.set('io', io);
-  console.log('⚠️  Running in serverless environment - Socket.IO disabled');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('⚠️  Running in serverless environment - Socket.IO disabled');
+  }
 }
 
 module.exports = app;

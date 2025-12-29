@@ -6,6 +6,10 @@
 import axios from 'axios';
 
 // Get API URL from environment variable or use relative path
+// For Vercel deployment, use empty string to use relative paths
+// For local development, can set REACT_APP_API_URL=http://localhost:5000
+// Note: Many components use direct axios calls with '/api/...' paths
+// So we set baseURL to empty string to allow both patterns
 const API_URL = process.env.REACT_APP_API_URL || '';
 
 // Create axios instance with base configuration

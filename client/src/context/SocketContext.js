@@ -10,8 +10,12 @@ export const SocketProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+    // Don't connect Socket.IO in production/Vercel (serverless doesn't support WebSockets)
+    const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
+    
+    if (isAuthenticated && user && !isProduction) {
+      const socketUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const newSocket = io(socketUrl, {
         auth: {
           userId: user.id
         }
@@ -41,6 +45,7 @@ export const SocketProvider = ({ children }) => {
         newSocket.close();
       };
     } else {
+      // In production/Vercel, Socket.IO is disabled
       if (socket) {
         socket.close();
         setSocket(null);
