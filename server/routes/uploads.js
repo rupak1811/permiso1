@@ -59,7 +59,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     // Try GCP Storage first
     if (gcpStorage) {
       try {
-        const folderPath = `uploads/${req.user._id}`;
+        const folderPath = `uploads/${req.user.id || req.user._id}`;
         const result = await uploadFile(req.file, folderPath);
         
         fileData = {
@@ -72,6 +72,11 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
         };
       } catch (gcpError) {
         console.error('GCP upload error:', gcpError);
+        console.error('GCP upload error details:', {
+          message: gcpError.message,
+          stack: gcpError.stack,
+          user: req.user?.id
+        });
         // Fall through to Cloudinary if GCP fails
         if (!cloudinary) {
           throw gcpError;
@@ -114,7 +119,18 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ message: 'File upload failed', error: error.message });
+    console.error('Upload error details:', {
+      message: error.message,
+      stack: error.stack,
+      hasFile: !!req.file,
+      hasUser: !!req.user,
+      gcpStorage: !!gcpStorage,
+      cloudinary: !!cloudinary
+    });
+    res.status(500).json({ 
+      message: 'File upload failed', 
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message 
+    });
   }
 });
 

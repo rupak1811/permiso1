@@ -132,7 +132,8 @@ const ProjectUpload = () => {
         }
       } catch (error) {
         console.error('Upload error:', error);
-        toast.error(`Failed to upload ${file.name}`);
+        const errorMessage = error.response?.data?.message || error.message || 'Upload failed';
+        toast.error(`Failed to upload ${file.name}: ${errorMessage}`);
       }
     }
     
