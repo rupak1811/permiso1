@@ -172,12 +172,14 @@ Value: your-google-maps-api-key
 
 ---
 
-### 15. **REACT_APP_API_URL** (Optional - Usually Not Needed)
+### 15. **REACT_APP_API_URL** (⚠️ IMPORTANT - Leave Empty!)
 ```
 Name: REACT_APP_API_URL
-Value: [Leave empty or don't set]
+Value: [Leave EMPTY or delete this variable]
 ```
-**Why:** For Vercel deployment, leave this empty so the app uses relative `/api` paths. Only set if you need to override the default behavior.
+**Why:** For Vercel deployment, **DO NOT SET THIS** or set it to empty string. The app uses relative `/api` paths which work on the same domain. Setting this to a wrong value will break API calls.
+
+**Common mistake:** Setting this to a random string or localhost URL will break your deployment!
 
 ---
 
@@ -248,6 +250,19 @@ Copy this checklist and check off as you add each variable:
 - Verify `REACT_APP_GOOGLE_MAPS_API_KEY` is set
 - Check API key restrictions in Google Cloud Console
 - Ensure Maps JavaScript API is enabled
+
+### "react-scripts: command not found" or Build fails
+- Ensure `package-lock.json` files exist in root, `server/`, and `client/` directories
+- Check that the install command completes successfully
+- Verify Node.js version is >= 18.0.0
+- Try clearing Vercel build cache and redeploying
+
+### "API calls failing" or "Network errors"
+- **IMPORTANT:** Make sure `REACT_APP_API_URL` is either:
+  - Not set at all (delete the variable), OR
+  - Set to empty string `""`
+- Do NOT set it to localhost, a random string, or any URL
+- The app uses relative `/api` paths which work automatically on Vercel
 
 ---
 
