@@ -14,7 +14,9 @@ export const SocketProvider = ({ children }) => {
     const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
     
     if (isAuthenticated && user && !isProduction) {
-      const socketUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      // Only connect in local development
+      // Use relative path or environment variable, but default to localhost for dev only
+      const socketUrl = process.env.REACT_APP_SOCKET_URL || (process.env.REACT_APP_API_URL || 'http://localhost:5000');
       const newSocket = io(socketUrl, {
         auth: {
           userId: user.id

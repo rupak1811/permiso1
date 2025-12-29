@@ -3,27 +3,14 @@
   "installCommand": "npm install && cd server && npm install && cd ../client && npm install",
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
-  "builds": [
-    {
-      "src": "api/[...path].js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/[...path].js"
+      "destination": "/api/[...path]"
     },
     {
       "source": "/(.*)",
-      "destination": "/client/build/index.html"
+      "destination": "/index.html"
     }
   ]
 }

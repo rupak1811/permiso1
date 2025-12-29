@@ -5,7 +5,7 @@
 
 const app = require('../server/index');
 
-// Export the Express app for Vercel
-// Vercel will route /api/* requests to this function
+// Export the Express app as a Vercel serverless function handler
+// Vercel will automatically handle the request/response conversion
 module.exports = app;
 

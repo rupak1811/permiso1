@@ -31,7 +31,12 @@ app.use(helmet());
 // Vercel automatically sets this, but we enable it explicitly
 const isVercelProxy = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
 app.set('trust proxy', isVercelProxy || process.env.TRUST_PROXY === 'true');
-app.use(cors());
+
+// CORS configuration - allow same origin (Vercel) and configured origins
+app.use(cors({
+  origin: process.env.CLIENT_URL || (isVercelProxy ? true : 'http://localhost:3000'),
+  credentials: true
+}));
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -84,7 +89,7 @@ let server = null;
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
 
 if (!isVercel) {
-  // Start server only in non-serverless environments
+  // Start server only in non-serverless environments (local development)
   server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
@@ -114,16 +119,14 @@ if (!isVercel) {
   // Make io available to routes
   app.set('io', io);
 } else {
-  // In Vercel, Socket.IO won't work with serverless functions
-  // Create a mock io object to prevent errors
+  // In Vercel serverless environment, Socket.IO won't work
+  // Create a mock io object to prevent errors in routes
   io = {
     to: () => ({ emit: () => {} }),
     emit: () => {}
   };
   app.set('io', io);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('⚠️  Running in serverless environment - Socket.IO disabled');
-  }
+  // Don't start a server - Vercel handles requests via serverless functions
 }
 
 module.exports = app;
