@@ -57,6 +57,7 @@ app.use('/api/', limiter);
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
+app.use('/api/permits', require('./routes/permits'));
 app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/reviews', require('./routes/reviews'));

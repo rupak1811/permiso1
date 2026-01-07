@@ -25,6 +25,9 @@ import AIAssistant from './pages/user/AIAssistant';
 import CostEstimator from './pages/user/CostEstimator';
 import DocumentManager from './pages/user/DocumentManager';
 import Profile from './pages/user/Profile';
+import ApplyForPermits from './pages/user/ApplyForPermits';
+import PermitsList from './pages/user/PermitsList';
+import PermitDetails from './pages/user/PermitDetails';
 
 // Reviewer Pages
 import ReviewerDashboard from './pages/reviewer/Dashboard';
@@ -34,6 +37,7 @@ import ReviewerLanding from './pages/reviewer/Landing';
 import ReviewerProjects from './pages/reviewer/ReviewerProjects';
 import PendingReviews from './pages/reviewer/PendingReviews';
 import CompletedReviews from './pages/reviewer/CompletedReviews';
+import ReviewerPermits from './pages/reviewer/ReviewerPermits';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -185,6 +189,42 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                <Route path="/apply-for-permits" element={
+                  <ProtectedRoute redirectPath="/login">
+                    <Navbar />
+                    <div className="flex flex-col sm:flex-row">
+                      <Sidebar />
+                      <main className="flex-1 p-3 sm:p-4 md:p-6 w-full overflow-x-hidden">
+                        <ApplyForPermits />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/permits" element={
+                  <ProtectedRoute redirectPath="/login">
+                    <Navbar />
+                    <div className="flex flex-col sm:flex-row">
+                      <Sidebar />
+                      <main className="flex-1 p-3 sm:p-4 md:p-6 w-full overflow-x-hidden">
+                        <PermitsList />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/permits/:id" element={
+                  <ProtectedRoute redirectPath="/login">
+                    <Navbar />
+                    <div className="flex flex-col sm:flex-row">
+                      <Sidebar />
+                      <main className="flex-1 p-3 sm:p-4 md:p-6 w-full overflow-x-hidden">
+                        <PermitDetails />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                
                 {/* Reviewer Routes */}
                 <Route path="/reviewer/dashboard" element={
                   <ProtectedRoute allowedRoles={['reviewer', 'admin']} redirectPath="/reviewer/login">
@@ -241,6 +281,30 @@ function App() {
                       <Sidebar />
                       <main className="flex-1 p-6">
                         <CompletedReviews />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/reviewer/permits/:id" element={
+                  <ProtectedRoute allowedRoles={['reviewer', 'admin']} redirectPath="/reviewer/login">
+                    <Navbar />
+                    <div className="flex">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <PermitDetails />
+                      </main>
+                    </div>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/reviewer/permits" element={
+                  <ProtectedRoute allowedRoles={['reviewer', 'admin']} redirectPath="/reviewer/login">
+                    <Navbar />
+                    <div className="flex">
+                      <Sidebar />
+                      <main className="flex-1 p-6">
+                        <ReviewerPermits />
                       </main>
                     </div>
                   </ProtectedRoute>

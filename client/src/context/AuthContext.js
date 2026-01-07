@@ -93,10 +93,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     dispatch({ type: 'LOGIN_START' });
     try {
+      // Clear any existing token before login
+      const oldToken = localStorage.getItem('token');
+      if (oldToken) {
+        delete axios.defaults.headers.common['Authorization'];
+      }
+
       const response = await axios.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
       
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+
       localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user, token }
@@ -105,7 +117,11 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return { success: true, user };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      // Clear token on error
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      
+      const message = error.response?.data?.message || error.message || 'Login failed';
       dispatch({ type: 'LOGIN_FAILURE', payload: message });
       toast.error(message);
       return { success: false, error: message };

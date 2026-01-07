@@ -150,6 +150,18 @@ const Sidebar = () => {
         path: '/documents',
         icon: FolderOpen,
         roles: ['user']
+      },
+      {
+        name: 'Apply for Permits',
+        path: '/apply-for-permits',
+        icon: FileText,
+        roles: ['user']
+      },
+      {
+        name: 'Permits',
+        path: '/permits',
+        icon: FileText,
+        roles: ['user']
       }
     ];
 
@@ -184,6 +196,12 @@ const Sidebar = () => {
           name: 'Completed Reviews',
           path: '/reviewer/completed',
           icon: CheckCircle2,
+          roles: ['reviewer']
+        },
+        {
+          name: 'Permits',
+          path: '/reviewer/permits',
+          icon: FileText,
           roles: ['reviewer']
         }
       ];

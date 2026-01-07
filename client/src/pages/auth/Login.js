@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -40,10 +40,18 @@ const Login = ({ allowedRole = 'user' }) => {
     password: ''
   });
   const [errors, setErrors] = useState({});
-  const { login, loading } = useAuth();
+  const { login, loading, isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const config = roleCopy[allowedRole] || roleCopy.user;
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const role = user.role || allowedRole;
+      navigate(roleRedirects[role] || '/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, allowedRole]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,10 +90,23 @@ const Login = ({ allowedRole = 'user' }) => {
     
     if (!validateForm()) return;
 
+    // Clear any existing errors
+    setErrors({});
+
     const result = await login(formData.email, formData.password);
     if (result.success) {
+      // Clear form
+      setFormData({ email: '', password: '' });
       const role = result.user?.role || allowedRole;
-      navigate(roleRedirects[role] || '/dashboard');
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        navigate(roleRedirects[role] || '/dashboard', { replace: true });
+      }, 100);
+    } else {
+      // Set error if login failed
+      if (result.error) {
+        setErrors({ submit: result.error });
+      }
     }
   };
 
@@ -143,6 +164,12 @@ const Login = ({ allowedRole = 'user' }) => {
               <p className="text-red-400 text-sm mt-1">{errors.password}</p>
             )}
           </div>
+
+          {errors.submit && (
+            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+              <p className="text-red-400 text-sm text-center">{errors.submit}</p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center">

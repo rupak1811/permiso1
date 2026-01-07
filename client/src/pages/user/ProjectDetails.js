@@ -16,8 +16,11 @@ import {
   FileText,
   MessageCircle,
   DollarSign,
-  Calendar
+  Calendar,
+  Upload,
+  X
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -26,6 +29,8 @@ const ProjectDetails = () => {
   const { socket, on, off } = useSocket();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState(null);
 
   const fetchProject = async () => {
     try {
@@ -79,6 +84,49 @@ const ProjectDetails = () => {
       }
     };
   }, [id, socket]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploadingFile(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload directly to project endpoint
+      await axios.post(`/api/uploads/project/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      toast.success('File uploaded successfully');
+      fetchProject();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+      e.target.value = ''; // Reset input
+    }
+  };
+
+  const handleDeleteDocument = async (docId, index) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+
+    try {
+      setDeletingDoc(docId);
+      await axios.delete(`/api/uploads/project/${id}/${docId}`);
+      toast.success('Document deleted successfully');
+      fetchProject();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document');
+    } finally {
+      setDeletingDoc(null);
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -157,7 +205,10 @@ const ProjectDetails = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="glass-button border-2 border-white/30 hover:bg-white/10">
+            <button 
+              onClick={() => navigate(`/projects/${project.id}/edit`)}
+              className="glass-button border-2 border-white/30 hover:bg-white/10"
+            >
               <Edit className="w-4 h-4 mr-2" />
               Edit
             </button>
@@ -218,9 +269,16 @@ const ProjectDetails = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Documents</h2>
-              <button className="glass-button bg-gradient-to-r from-blue-500 to-purple-600">
+              <label className="glass-button bg-gradient-to-r from-blue-500 to-purple-600 cursor-pointer">
+                <Upload className="w-4 h-4 mr-2" />
                 Upload More
-              </button>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.dwg,.dxf"
+                />
+              </label>
             </div>
             <div className="space-y-3">
               {project.documents.map((doc, index) => (
@@ -235,11 +293,31 @@ const ProjectDetails = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                    >
                       <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                    </a>
+                    <a
+                      href={doc.url}
+                      download
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                    >
                       <Download className="w-4 h-4" />
+                    </a>
+                    <button
+                      onClick={() => handleDeleteDocument(doc.id || doc.fileName, index)}
+                      disabled={deletingDoc === (doc.id || doc.fileName)}
+                      className="p-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                    >
+                      {deletingDoc === (doc.id || doc.fileName) ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                      ) : (
+                        <X className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
