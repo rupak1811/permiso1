@@ -45,13 +45,16 @@ const Login = ({ allowedRole = 'user' }) => {
   const navigate = useNavigate();
   const config = roleCopy[allowedRole] || roleCopy.user;
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but not on page load/refresh)
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !loading) {
       const role = user.role || allowedRole;
-      navigate(roleRedirects[role] || '/dashboard', { replace: true });
+      // Only redirect if we're actually on the login page (not a refresh)
+      if (window.location.pathname.includes('/login')) {
+        navigate(roleRedirects[role] || '/dashboard', { replace: true });
+      }
     }
-  }, [isAuthenticated, user, navigate, allowedRole]);
+  }, [isAuthenticated, user, navigate, allowedRole, loading]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

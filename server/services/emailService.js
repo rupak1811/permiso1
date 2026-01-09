@@ -58,7 +58,8 @@ class EmailService {
   }
 
   async sendContactEmail({ fromEmail, fromName, message, subject }) {
-    const contactEmail = 'rupakchimakurthi1811@gmail.com';
+    // Get contact email from environment variable or use default
+    const contactEmail = process.env.CONTACT_EMAIL || 'rupakchimakurthi1811@gmail.com';
     const smtpUser = process.env.SMTP_USER;
     
     // Use SMTP user as the sender to ensure proper authentication

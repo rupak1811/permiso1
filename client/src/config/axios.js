@@ -41,13 +41,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle 401 Unauthorized - redirect to login
+    // Handle 401 Unauthorized - only redirect if on protected route
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/auth/login') {
-        window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      const publicPaths = ['/', '/login', '/register', '/reviewer', '/admin', '/reviewer/login', '/admin/login'];
+      const isPublicPath = publicPaths.includes(currentPath);
+      
+      // Only remove token and redirect if on a protected route
+      if (!isPublicPath) {
+        localStorage.removeItem('token');
+        // Only redirect if not already on login page
+        if (currentPath !== '/login' && currentPath !== '/auth/login') {
+          window.location.href = '/login';
+        }
       }
+      // If on public path, just let the error pass through (don't redirect)
     }
     return Promise.reject(error);
   }

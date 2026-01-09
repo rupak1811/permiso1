@@ -20,7 +20,13 @@ import {
   Clock,
   CheckCircle2,
   Mail,
-  Send
+  Send,
+  User,
+  Phone,
+  MapPin,
+  Edit,
+  Save,
+  LogOut
 } from 'lucide-react';
 import BrandLogo from '../../components/common/BrandLogo';
 import { useTheme } from '../../context/ThemeContext';
@@ -100,7 +106,7 @@ const roleConfigs = {
       title: 'Ready to Get Started?',
       description: 'Join thousands of professionals who trust Permiso for permit management.',
       primary: { label: 'Start Free Trial', to: '/register?role=user' },
-      secondary: { label: 'Contact Sales', to: '/contact' }
+      secondary: { label: 'Contact Sales', href: '#contact' }
     },
     contact: {
       title: 'Contact Us',
@@ -277,7 +283,7 @@ const RoleLanding = ({ variant = 'user' }) => {
   const config = roleConfigs[variant] || roleConfigs.user;
   const landingPath = roleHomePaths[config.slug] || '/';
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, updateProfile, logout, isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -288,8 +294,21 @@ const RoleLanding = ({ variant = 'user' }) => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: {
+      street: user?.address?.street || '',
+      city: user?.address?.city || '',
+      state: user?.address?.state || '',
+      zipCode: user?.address?.zipCode || ''
+    }
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  // Update form when user changes
+  // Update forms when user changes
   useEffect(() => {
     if (user) {
       setContactForm(prev => ({
@@ -297,6 +316,17 @@ const RoleLanding = ({ variant = 'user' }) => {
         name: user.name || prev.name,
         email: user.email || prev.email
       }));
+      setProfileForm({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: {
+          street: user.address?.street || '',
+          city: user.address?.city || '',
+          state: user.address?.state || '',
+          zipCode: user.address?.zipCode || ''
+        }
+      });
     }
   }, [user]);
 
@@ -369,6 +399,26 @@ const RoleLanding = ({ variant = 'user' }) => {
         <Link key={`${action.label}-${idx}`} to={action.to} className={classes}>
           {content}
         </Link>
+      );
+    }
+
+    // Handle hash links with smooth scroll
+    if (action.href && action.href.startsWith('#')) {
+      return (
+        <a
+          key={`${action.label}-${idx}`}
+          href={action.href}
+          className={classes}
+          onClick={(e) => {
+            e.preventDefault();
+            const element = document.querySelector(action.href);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}
+        >
+          {content}
+        </a>
       );
     }
 
@@ -605,6 +655,34 @@ const RoleLanding = ({ variant = 'user' }) => {
                 >
                   {config.cta.secondary.label}
                 </Link>
+              ) : config.cta.secondary.href?.startsWith('#') ? (
+                <a
+                  href={config.cta.secondary.href}
+                  className="glass-button border-2 border-white/30 hover:bg-white/10 text-lg px-8 py-4 rounded-xl font-semibold transition-all duration-300"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.querySelector(config.cta.secondary.href);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                >
+                  {config.cta.secondary.label}
+                </a>
+              ) : config.cta.secondary.href?.startsWith('#') ? (
+                <a
+                  href={config.cta.secondary.href}
+                  className="glass-button border-2 border-white/30 hover:bg-white/10 text-lg px-8 py-4 rounded-xl font-semibold transition-all duration-300"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.querySelector(config.cta.secondary.href);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                >
+                  {config.cta.secondary.label}
+                </a>
               ) : (
                 <a
                   href={config.cta.secondary.href}
@@ -617,6 +695,231 @@ const RoleLanding = ({ variant = 'user' }) => {
           </motion.div>
         </div>
       </section>
+
+      {/* User Profile Section - Only shown when logged in */}
+      {isAuthenticated && user && (
+        <section id="profile" className="py-20 relative">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="glass-card p-6 sm:p-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Your Profile</h2>
+                  <p className="text-gray-300">Manage your account information</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {!isEditingProfile ? (
+                    <button
+                      onClick={() => setIsEditingProfile(true)}
+                      className="glass-button bg-blue-500/20 hover:bg-blue-500/30 px-4 py-2 flex items-center"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </button>
+                  ) : (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={async () => {
+                          setProfileLoading(true);
+                          try {
+                            const result = await updateProfile(profileForm);
+                            if (result.success) {
+                              setIsEditingProfile(false);
+                            }
+                          } catch (error) {
+                            console.error('Profile update error:', error);
+                          } finally {
+                            setProfileLoading(false);
+                          }
+                        }}
+                        disabled={profileLoading}
+                        className="glass-button bg-green-500/20 hover:bg-green-500/30 px-4 py-2 flex items-center disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {profileLoading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          setProfileForm({
+                            name: user.name || '',
+                            email: user.email || '',
+                            phone: user.phone || '',
+                            address: {
+                              street: user.address?.street || '',
+                              city: user.address?.city || '',
+                              state: user.address?.state || '',
+                              zipCode: user.address?.zipCode || ''
+                            }
+                          });
+                        }}
+                        className="glass-button border-2 border-white/30 hover:bg-white/10 px-4 py-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      window.location.href = '/';
+                    }}
+                    className="glass-button bg-red-500/20 hover:bg-red-500/30 px-4 py-2 flex items-center"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <User className="w-4 h-4 inline mr-2" />
+                    Full Name
+                  </label>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="glass-input w-full"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.name || 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Email
+                  </label>
+                  <div className="glass-input w-full bg-white/5 text-gray-400 py-2.5">
+                    {user.email}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <Phone className="w-4 h-4 inline mr-2" />
+                    Phone
+                  </label>
+                  {isEditingProfile ? (
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      className="glass-input w-full"
+                      placeholder="Enter phone number"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.phone || 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <MapPin className="w-4 h-4 inline mr-2" />
+                    Street Address
+                  </label>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={profileForm.address.street}
+                      onChange={(e) => setProfileForm({
+                        ...profileForm,
+                        address: { ...profileForm.address, street: e.target.value }
+                      })}
+                      className="glass-input w-full"
+                      placeholder="Street address"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.address?.street || 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={profileForm.address.city}
+                      onChange={(e) => setProfileForm({
+                        ...profileForm,
+                        address: { ...profileForm.address, city: e.target.value }
+                      })}
+                      className="glass-input w-full"
+                      placeholder="City"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.address?.city || 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">State</label>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={profileForm.address.state}
+                      onChange={(e) => setProfileForm({
+                        ...profileForm,
+                        address: { ...profileForm.address, state: e.target.value }
+                      })}
+                      className="glass-input w-full"
+                      placeholder="State"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.address?.state || 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Zip Code</label>
+                  {isEditingProfile ? (
+                    <input
+                      type="text"
+                      value={profileForm.address.zipCode}
+                      onChange={(e) => setProfileForm({
+                        ...profileForm,
+                        address: { ...profileForm.address, zipCode: e.target.value }
+                      })}
+                      className="glass-input w-full"
+                      placeholder="Zip code"
+                      disabled={profileLoading}
+                    />
+                  ) : (
+                    <div className="glass-input w-full bg-white/5 text-white py-2.5">
+                      {user.address?.zipCode || 'Not set'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       <section id="contact" className="py-20 relative">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
