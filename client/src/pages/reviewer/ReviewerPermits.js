@@ -35,6 +35,8 @@ const ReviewerPermits = () => {
   const [actionComment, setActionComment] = useState('');
   const [requestedDocs, setRequestedDocs] = useState('');
   const [performingAction, setPerformingAction] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     fetchPermits();
@@ -69,8 +71,15 @@ const ReviewerPermits = () => {
     }
   };
 
-  const handleAction = async (action) => {
+  const handleAction = async (action, skipConfirmation = false) => {
     if (!selectedPermit) return;
+
+    // Show confirmation for approve/reject actions
+    if ((action === 'approve' || action === 'reject') && !skipConfirmation) {
+      setPendingAction(action);
+      setShowConfirmation(true);
+      return;
+    }
 
     try {
       setPerformingAction(true);
@@ -88,6 +97,8 @@ const ReviewerPermits = () => {
       setSelectedPermit(null);
       setActionComment('');
       setRequestedDocs('');
+      setShowConfirmation(false);
+      setPendingAction(null);
       fetchPermits();
     } catch (error) {
       console.error('Error performing action:', error);
@@ -95,6 +106,17 @@ const ReviewerPermits = () => {
     } finally {
       setPerformingAction(false);
     }
+  };
+
+  const handleConfirmAction = () => {
+    if (pendingAction) {
+      handleAction(pendingAction, true);
+    }
+  };
+
+  const handleCancelConfirmation = () => {
+    setShowConfirmation(false);
+    setPendingAction(null);
   };
 
   const handleAssign = async (permitId) => {
@@ -276,8 +298,10 @@ const ReviewerPermits = () => {
                     <Eye className="w-4 h-4 mr-2" />
                     View Details
                   </button>
-                  {(!permit.reviewer || permit.reviewer === user.id) && permit.status !== 'approved' && permit.status !== 'rejected' && (
+                  {(!permit.reviewer || permit.reviewer === user.id || permit.reviewer?.id === user.id) && 
+                   permit.status !== 'approved' && permit.status !== 'rejected' && (
                     <div className="flex items-center space-x-2">
+                      {/* Show Assign button only for submitted permits without reviewer */}
                       {permit.status === 'submitted' && !permit.reviewer && (
                         <button
                           onClick={() => handleAssign(permit.id)}
@@ -286,33 +310,38 @@ const ReviewerPermits = () => {
                           Assign to Me
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          setSelectedPermit(permit);
-                          setActionModal('request_more_docs');
-                        }}
-                        className="glass-button bg-orange-500/20 hover:bg-orange-500/30 px-4 py-2"
-                      >
-                        Request Docs
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedPermit(permit);
-                          setActionModal('approve');
-                        }}
-                        className="glass-button bg-green-500/20 hover:bg-green-500/30 px-4 py-2"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedPermit(permit);
-                          setActionModal('reject');
-                        }}
-                        className="glass-button bg-red-500/20 hover:bg-red-500/30 px-4 py-2"
-                      >
-                        Reject
-                      </button>
+                      {/* Show actions for submitted, under_review, and request_more_docs statuses */}
+                      {(permit.status === 'submitted' || permit.status === 'under_review' || permit.status === 'request_more_docs') && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setSelectedPermit(permit);
+                              setActionModal('request_more_docs');
+                            }}
+                            className="glass-button bg-orange-500/20 hover:bg-orange-500/30 px-4 py-2"
+                          >
+                            Request Docs
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedPermit(permit);
+                              setActionModal('approve');
+                            }}
+                            className="glass-button bg-green-500/20 hover:bg-green-500/30 px-4 py-2"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedPermit(permit);
+                              setActionModal('reject');
+                            }}
+                            className="glass-button bg-red-500/20 hover:bg-red-500/30 px-4 py-2"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -372,8 +401,11 @@ const ReviewerPermits = () => {
                   setSelectedPermit(null);
                   setActionComment('');
                   setRequestedDocs('');
+                  setShowConfirmation(false);
+                  setPendingAction(null);
                 }}
                 className="glass-button border-2 border-white/30 hover:bg-white/10 px-4 py-2"
+                disabled={performingAction}
               >
                 Cancel
               </button>
@@ -392,6 +424,84 @@ const ReviewerPermits = () => {
                   actionModal === 'approve' ? 'Approve' :
                   actionModal === 'reject' ? 'Reject' :
                   'Request'
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && selectedPermit && pendingAction && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card p-6 max-w-md w-full"
+          >
+            <div className="flex items-center mb-4">
+              <div className={`p-3 rounded-full mr-4 ${
+                pendingAction === 'approve' 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : 'bg-red-500/20 text-red-400'
+              }`}>
+                {pendingAction === 'approve' ? (
+                  <CheckCircle className="w-6 h-6" />
+                ) : (
+                  <XCircle className="w-6 h-6" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white">
+                  Confirm {pendingAction === 'approve' ? 'Approval' : 'Rejection'}
+                </h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Are you sure you want to {pendingAction === 'approve' ? 'approve' : 'reject'} this permit?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-300 mb-2">
+                <span className="font-medium">Permit:</span> {selectedPermit.projectName}
+              </p>
+              <p className="text-sm text-gray-300 mb-2">
+                <span className="font-medium">Type:</span> {getPermitTypeName(selectedPermit.permitType)}
+              </p>
+              {actionComment && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-medium">Your Comment:</span>
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">{actionComment}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={handleCancelConfirmation}
+                disabled={performingAction}
+                className="glass-button border-2 border-white/30 hover:bg-white/10 px-4 py-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={performingAction}
+                className={`glass-button px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  pendingAction === 'approve' 
+                    ? 'bg-green-500/20 hover:bg-green-500/30' 
+                    : 'bg-red-500/20 hover:bg-red-500/30'
+                }`}
+              >
+                {performingAction ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  `Yes, ${pendingAction === 'approve' ? 'Approve' : 'Reject'}`
                 )}
               </button>
             </div>

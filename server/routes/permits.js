@@ -334,6 +334,15 @@ router.put('/:id/action', auth, authorize('reviewer', 'admin'), [
       return res.status(404).json({ message: 'Permit not found' });
     }
 
+    // Check if reviewer has permission (must be assigned reviewer or admin)
+    const reviewerId = typeof permit.reviewer === 'string' 
+      ? permit.reviewer 
+      : permit.reviewer?.id || permit.reviewer;
+    
+    if (req.user.role === 'reviewer' && reviewerId && reviewerId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only perform actions on permits assigned to you' });
+    }
+
     const { action, comment, requestedDocuments } = req.body;
 
     let newStatus;

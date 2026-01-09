@@ -359,14 +359,24 @@ const ApplyForPermits = () => {
               name="permitType"
               value={formData.permitType}
               onChange={handleInputChange}
-              className={`glass-input w-full ${errors.permitType ? 'border-red-400' : ''}`}
+              className={`glass-input w-full bg-white/5 ${errors.permitType ? 'border-red-400' : ''}`}
               required
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                backgroundSize: '1em 1em',
+                paddingRight: '2.5rem',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none'
+              }}
             >
-              <option value="">Select permit type</option>
-              <option value="building">Building Permit</option>
-              <option value="electric">Electric Permit</option>
-              <option value="plumber">Plumber Permit</option>
-              <option value="demolition">Demolition Permit</option>
+              <option value="" style={{ backgroundColor: 'rgba(10, 37, 64, 0.95)', color: 'white' }}>Select permit type</option>
+              <option value="building" style={{ backgroundColor: 'rgba(10, 37, 64, 0.95)', color: 'white' }}>Building Permit</option>
+              <option value="electric" style={{ backgroundColor: 'rgba(10, 37, 64, 0.95)', color: 'white' }}>Electric Permit</option>
+              <option value="plumber" style={{ backgroundColor: 'rgba(10, 37, 64, 0.95)', color: 'white' }}>Plumber Permit</option>
+              <option value="demolition" style={{ backgroundColor: 'rgba(10, 37, 64, 0.95)', color: 'white' }}>Demolition Permit</option>
             </select>
             {errors.permitType && (
               <p className="text-red-400 text-sm mt-1">{errors.permitType}</p>

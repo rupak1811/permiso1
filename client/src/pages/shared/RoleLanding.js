@@ -18,10 +18,15 @@ import {
   Upload,
   FolderOpen,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Mail,
+  Send
 } from 'lucide-react';
 import BrandLogo from '../../components/common/BrandLogo';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const roleConfigs = {
   user: {
@@ -272,9 +277,28 @@ const RoleLanding = ({ variant = 'user' }) => {
   const config = roleConfigs[variant] || roleConfigs.user;
   const landingPath = roleHomePaths[config.slug] || '/';
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const isDark = theme === 'dark';
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form when user changes
+  useEffect(() => {
+    if (user) {
+      setContactForm(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email
+      }));
+    }
+  }, [user]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -599,12 +623,104 @@ const RoleLanding = ({ variant = 'user' }) => {
           <div className="glass-card p-6 sm:p-8">
             <h2 className="text-3xl font-bold text-white mb-4">{config.contact.title}</h2>
             <p className="text-gray-300 mb-6">{config.contact.description}</p>
-            <form className="grid grid-cols-1 gap-4">
-              <input className="glass-input" placeholder="Your name" />
-              <input className="glass-input" placeholder="Your email" />
-              <textarea className="glass-input resize-none" placeholder="Message" rows="4" />
-              <button className="glass-button bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 w-full">Send</button>
+            <p className="text-sm text-gray-400 mb-4">
+              {user ? (
+                <span className="flex items-center">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Sending from your account: <strong className="ml-1">{user.email}</strong>
+                </span>
+              ) : (
+                'Please fill in your details below. We will respond to your email.'
+              )}
+            </p>
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (isSubmitting) return;
+
+                if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
+                  toast.error('Please fill in all required fields');
+                  return;
+                }
+
+                setIsSubmitting(true);
+                try {
+                  const response = await axios.post('/api/contact', contactForm);
+                  if (response.data.success) {
+                    toast.success(response.data.message || 'Message sent successfully!');
+                    setContactForm({
+                      name: user?.name || '',
+                      email: user?.email || '',
+                      subject: '',
+                      message: ''
+                    });
+                  }
+                } catch (error) {
+                  console.error('Contact form error:', error);
+                  const errorMessage = error.response?.data?.message || 'Failed to send message. Please try again.';
+                  toast.error(errorMessage);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              className="grid grid-cols-1 gap-4"
+            >
+              <input
+                type="text"
+                className="glass-input"
+                placeholder="Your name"
+                value={contactForm.name}
+                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                required
+                disabled={isSubmitting}
+              />
+              <input
+                type="email"
+                className="glass-input"
+                placeholder="Your email"
+                value={contactForm.email}
+                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                required
+                disabled={isSubmitting || !!user}
+              />
+              <input
+                type="text"
+                className="glass-input"
+                placeholder="Subject (optional)"
+                value={contactForm.subject}
+                onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                disabled={isSubmitting}
+              />
+              <textarea
+                className="glass-input resize-none"
+                placeholder="Your message"
+                rows="4"
+                value={contactForm.message}
+                onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                required
+                disabled={isSubmitting}
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="glass-button bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Message
+                  </>
+                )}
+              </button>
             </form>
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Your message will be sent to: <strong className="text-gray-400">rupakchimakurthi1811@gmail.com</strong>
+            </p>
           </div>
         </div>
       </section>
