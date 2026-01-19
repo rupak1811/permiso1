@@ -433,24 +433,24 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <div className="glass-card p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <h2 className="text-lg sm:text-xl font-semibold text-white text-center sm:text-left">Notifications</h2>
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full text-center self-center">
+          <div className="glass-card p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="text-sm sm:text-base font-semibold text-white">Notifications</h2>
+              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                 {notifications.filter(n => !n.isRead).length}
               </span>
             </div>
 
-            <div className="space-y-3 sm:space-y-4">
+            <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto pr-2 space-y-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4b5563 transparent' }}>
               {loading ? (
-                <div className="text-center py-8 text-gray-400">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div>
-                  <p>Loading notifications...</p>
+                <div className="text-center py-4 text-gray-400">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto mb-2"></div>
+                  <p className="text-xs">Loading...</p>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">No notifications</p>
+                <div className="text-center py-4 text-gray-400">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">No notifications</p>
                 </div>
               ) : (
                 notifications.map((notification) => (
@@ -459,24 +459,24 @@ const Dashboard = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4 }}
-                  className={`p-3 sm:p-4 rounded-lg transition-colors ${
+                  className={`p-2 rounded-lg transition-colors ${
                     notification.isRead 
                       ? 'bg-white/5' 
                       : 'bg-blue-500/10 border border-blue-500/20'
                   }`}
                 >
-                  <div className="flex items-start space-x-2 sm:space-x-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  <div className="flex items-start space-x-2">
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
                       notification.isRead ? 'bg-gray-400' : 'bg-blue-400'
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-medium text-xs sm:text-sm break-words">
+                      <h4 className="text-white font-medium text-xs break-words leading-tight">
                         {notification.title}
                       </h4>
-                      <p className="text-gray-400 text-xs mt-1 break-words">
+                      <p className="text-gray-400 text-xs mt-0.5 break-words line-clamp-2">
                         {notification.message}
                       </p>
-                      <p className="text-gray-500 text-xs mt-2">
+                      <p className="text-gray-500 text-xs mt-1">
                         {notification.timestamp}
                       </p>
                     </div>
@@ -488,9 +488,9 @@ const Dashboard = () => {
 
             <Link
               to="/notifications"
-              className="block text-center text-blue-400 hover:text-blue-300 text-xs sm:text-sm font-medium mt-4 py-2"
+              className="block text-center text-blue-400 hover:text-blue-300 text-xs font-medium mt-3 py-1.5"
             >
-              View All Notifications
+              View All
             </Link>
           </div>
         </motion.div>
