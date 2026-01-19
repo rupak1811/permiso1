@@ -1,8 +1,28 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
+
+// Session timeout: 10 minutes in milliseconds
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
+// Helper function to update last activity timestamp
+const updateLastActivity = () => {
+  if (localStorage.getItem('token')) {
+    localStorage.setItem('lastActivity', Date.now().toString());
+  }
+};
+
+// Helper function to check if session has expired
+const isSessionExpired = () => {
+  const lastActivity = localStorage.getItem('lastActivity');
+  if (!lastActivity) {
+    return true; // No activity recorded, consider expired
+  }
+  const timeSinceLastActivity = Date.now() - parseInt(lastActivity, 10);
+  return timeSinceLastActivity > SESSION_TIMEOUT;
+};
 
 const authReducer = (state, action) => {
   switch (action.type) {
@@ -57,6 +77,7 @@ const initialState = {
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const activityTimeoutRef = useRef(null);
 
   // Set up axios interceptor for token
   useEffect(() => {
@@ -67,11 +88,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, [state.token]);
 
-  // Check if user is logged in on app start
+  // Check if user is logged in on app start and validate session timeout
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
+        // Check if session has expired
+        if (isSessionExpired()) {
+          // Session expired, log out user
+          localStorage.removeItem('token');
+          localStorage.removeItem('lastActivity');
+          dispatch({ type: 'LOGOUT' });
+          toast.error('Your session has expired. Please login again.');
+          return;
+        }
+
         try {
           const response = await axios.get('/api/auth/me');
           dispatch({
@@ -81,14 +112,76 @@ export const AuthProvider = ({ children }) => {
               token
             }
           });
+          // Update last activity on successful auth check
+          updateLastActivity();
         } catch (error) {
           localStorage.removeItem('token');
+          localStorage.removeItem('lastActivity');
           dispatch({ type: 'LOGOUT' });
         }
       }
     };
     checkAuth();
   }, []);
+
+  // Set up activity tracking for session timeout
+  useEffect(() => {
+    if (!state.isAuthenticated) {
+      return; // Don't track activity if not authenticated
+    }
+
+    // Throttle activity updates to avoid excessive localStorage writes
+    const throttledUpdateActivity = () => {
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+      activityTimeoutRef.current = setTimeout(() => {
+        updateLastActivity();
+      }, 1000); // Update at most once per second
+    };
+
+    // Events that indicate user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    // Add event listeners
+    activityEvents.forEach(event => {
+      window.addEventListener(event, throttledUpdateActivity, { passive: true });
+    });
+
+    // Handle visibility change (when user switches tabs/windows or closes/reopens)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Page became visible again, check if session expired since last activity
+        // This handles the case when user closes the website and reopens it
+        if (isSessionExpired()) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('lastActivity');
+          dispatch({ type: 'LOGOUT' });
+          toast.error('Your session has expired. Please login again.');
+        } else {
+          // Update activity when page becomes visible (user is back)
+          updateLastActivity();
+        }
+      }
+      // When page becomes hidden, we don't update activity
+      // This allows the 10-minute timeout to work when user closes the website
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial activity update
+    updateLastActivity();
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, throttledUpdateActivity);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    };
+  }, [state.isAuthenticated]);
 
   const login = async (email, password) => {
     dispatch({ type: 'LOGIN_START' });
@@ -109,6 +202,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Set last activity timestamp on login
+      updateLastActivity();
+      
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user, token }
@@ -117,8 +213,9 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return { success: true, user };
     } catch (error) {
-      // Clear token on error
+      // Clear token and last activity on error
       localStorage.removeItem('token');
+      localStorage.removeItem('lastActivity');
       delete axios.defaults.headers.common['Authorization'];
       
       const message = error.response?.data?.message || error.message || 'Login failed';
@@ -135,6 +232,10 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
+      
+      // Set last activity timestamp on registration
+      updateLastActivity();
+      
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user, token }
@@ -152,6 +253,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('lastActivity');
     dispatch({ type: 'LOGOUT' });
     toast.success('Logged out successfully');
   };

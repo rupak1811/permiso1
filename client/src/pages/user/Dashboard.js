@@ -18,7 +18,8 @@ import {
   Eye,
   Download,
   Upload,
-  Calculator
+  Calculator,
+  RefreshCw
 } from 'lucide-react';
 import { Sun, Moon } from 'lucide-react';
 
@@ -30,6 +31,7 @@ const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalProjects: 0,
     pendingReviews: 0,
@@ -38,11 +40,15 @@ const Dashboard = () => {
   });
 
   // Fetch real data from API
-  const fetchData = async () => {
+  const fetchData = async (showLoading = false) => {
     if (!user) return;
     
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       
       // Fetch projects for the authenticated user only
       const allProjectsResponse = await axios.get('/api/projects?limit=1000');
@@ -113,26 +119,33 @@ const Dashboard = () => {
         totalSpent: 0
       });
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
+  // Manual refresh handler
+  const handleRefresh = () => {
+    fetchData(false);
+  };
+
   useEffect(() => {
-    fetchData();
+    // Initial load with loading indicator
+    fetchData(true);
     
-    // Refresh every 15 seconds
-    const interval = setInterval(fetchData, 15000);
-    
-    // Listen for project updates via Socket.IO
+    // Listen for project updates via Socket.IO - update silently without loading indicator
     const handleProjectUpdate = (data) => {
-      console.log('[User Dashboard] Project updated, refreshing data...', data);
-      fetchData();
+      console.log('[User Dashboard] Project updated, refreshing data silently...', data);
+      fetchData(false); // Silent update
     };
     
-    // Listen for notifications
+    // Listen for notifications - update silently
     const handleNotification = () => {
-      console.log('[User Dashboard] New notification received, refreshing...');
-      fetchData();
+      console.log('[User Dashboard] New notification received, refreshing silently...');
+      fetchData(false); // Silent update
     };
     
     if (socket) {
@@ -141,7 +154,6 @@ const Dashboard = () => {
     }
     
     return () => {
-      clearInterval(interval);
       if (socket) {
         off('project_updated', handleProjectUpdate);
         off('notification', handleNotification);
@@ -211,6 +223,15 @@ const Dashboard = () => {
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>New Project</span>
             </Link>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2.5 sm:p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors w-full sm:w-auto flex justify-center items-center min-h-[44px] sm:min-h-0 disabled:opacity-50"
+              aria-label="Refresh"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2.5 sm:p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors w-full sm:w-auto flex justify-center items-center min-h-[44px] sm:min-h-0"

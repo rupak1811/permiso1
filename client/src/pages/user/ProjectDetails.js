@@ -18,7 +18,8 @@ import {
   DollarSign,
   Calendar,
   Upload,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -29,46 +30,56 @@ const ProjectDetails = () => {
   const { socket, on, off } = useSocket();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState(null);
 
-  const fetchProject = async () => {
+  const fetchProject = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       const response = await axios.get(`/api/projects/${id}`);
       setProject(response.data.project);
     } catch (error) {
       console.error('Error fetching project:', error);
       setProject(null);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    if (id) {
+      fetchProject(false);
     }
   };
 
   useEffect(() => {
     if (id) {
-      fetchProject();
+      // Initial load with loading indicator
+      fetchProject(true);
     }
     
-    // Refresh every 15 seconds
-    const interval = setInterval(() => {
-      if (id) {
-        fetchProject();
-      }
-    }, 15000);
-    
-    // Listen for project updates via Socket.IO
+    // Listen for project updates via Socket.IO - update silently without loading indicator
     const handleProjectUpdate = (data) => {
-      if (data.projectId === id) {
-        console.log('[ProjectDetails] Project updated, refreshing...', data);
-        fetchProject();
+      if (data.projectId === id || data.id === id) {
+        console.log('[ProjectDetails] Project updated, refreshing silently...', data);
+        fetchProject(false); // Silent update
       }
     };
     
-    // Listen for notifications
+    // Listen for notifications - update silently
     const handleNotification = () => {
-      console.log('[ProjectDetails] New notification received, refreshing...');
-      fetchProject();
+      console.log('[ProjectDetails] New notification received, refreshing silently...');
+      fetchProject(false); // Silent update
     };
     
     if (socket) {
@@ -77,7 +88,6 @@ const ProjectDetails = () => {
     }
     
     return () => {
-      clearInterval(interval);
       if (socket) {
         off('project_updated', handleProjectUpdate);
         off('notification', handleNotification);
@@ -205,6 +215,15 @@ const ProjectDetails = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+              aria-label="Refresh"
+              title="Refresh project"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             <button 
               onClick={() => navigate(`/projects/${project.id}/edit`)}
               className="glass-button border-2 border-white/30 hover:bg-white/10"

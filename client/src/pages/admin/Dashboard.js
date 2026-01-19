@@ -15,7 +15,8 @@ import {
   BarChart3,
   Activity,
   Sun,
-  Moon
+  Moon,
+  RefreshCw
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
@@ -23,6 +24,7 @@ const AdminDashboard = () => {
   useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -34,10 +36,13 @@ const AdminDashboard = () => {
   const [revenueData, setRevenueData] = useState([]);
   const [projectStatusData, setProjectStatusData] = useState([]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
+  const fetchDashboardData = async (showLoading = false) => {
+    try {
+      if (showLoading) {
         setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
         
         // Fetch dashboard stats
         const dashboardResponse = await axios.get('/api/admin/dashboard');
@@ -89,11 +94,22 @@ const AdminDashboard = () => {
         setRevenueData([]);
         setProjectStatusData([]);
       } finally {
-        setLoading(false);
+        if (showLoading) {
+          setLoading(false);
+        } else {
+          setRefreshing(false);
+        }
       }
     };
 
-    fetchDashboardData();
+  // Manual refresh handler
+  const handleRefresh = () => {
+    fetchDashboardData(false);
+  };
+
+  useEffect(() => {
+    // Initial load with loading indicator
+    fetchDashboardData(true);
   }, []);
 
   const getStatusColor = (status) => {
@@ -134,6 +150,15 @@ const AdminDashboard = () => {
             <p className="text-sm sm:text-base text-gray-300">Overview of platform performance and management</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2.5 sm:p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors flex justify-center items-center min-h-[44px] sm:min-h-0 disabled:opacity-50"
+              aria-label="Refresh"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}

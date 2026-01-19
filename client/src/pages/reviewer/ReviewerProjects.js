@@ -15,7 +15,8 @@ import {
   Eye,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 const ReviewerProjects = () => {
@@ -24,6 +25,7 @@ const ReviewerProjects = () => {
   const { socket, on, off } = useSocket();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [allProjects, setAllProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPrice, setFilterPrice] = useState('');
@@ -32,11 +34,15 @@ const ReviewerProjects = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = false) => {
     if (!user) return;
     
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       
       // Fetch all projects for reviewer (use all=true to get all projects regardless of status)
       const projectsResponse = await axios.get('/api/projects', {
@@ -60,20 +66,27 @@ const ReviewerProjects = () => {
       console.error('Error fetching projects:', error);
       setAllProjects([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
+  // Manual refresh handler
+  const handleRefresh = () => {
+    fetchData(false);
+  };
+
   useEffect(() => {
-    fetchData();
+    // Initial load with loading indicator
+    fetchData(true);
     
-    // Refresh every 15 seconds
-    const interval = setInterval(fetchData, 15000);
-    
-    // Listen for project updates via Socket.IO
+    // Listen for project updates via Socket.IO - update silently without loading indicator
     const handleProjectUpdate = () => {
-      console.log('[ReviewerProjects] Project updated, refreshing data...');
-      fetchData();
+      console.log('[ReviewerProjects] Project updated, refreshing data silently...');
+      fetchData(false); // Silent update
     };
     
     if (socket) {
@@ -81,7 +94,6 @@ const ReviewerProjects = () => {
     }
     
     return () => {
-      clearInterval(interval);
       if (socket) {
         off('project_updated', handleProjectUpdate);
       }
@@ -192,6 +204,15 @@ const ReviewerProjects = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-white">All Projects</h1>
             <p className="text-gray-300">View and manage all permit applications</p>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+            aria-label="Refresh"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         {/* Search and Filter Bar */}

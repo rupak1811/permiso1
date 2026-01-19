@@ -648,7 +648,17 @@ const RoleLanding = ({ variant = 'user' }) => {
                 {config.hero.description}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                {config.heroActions.map(renderHeroAction)}
+                {isAuthenticated && user ? (
+                  <Link
+                    to={user.role === 'reviewer' ? '/reviewer/dashboard' : user.role === 'admin' ? '/admin/dashboard' : '/dashboard'}
+                    className="glass-button bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 text-lg px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                ) : (
+                  config.heroActions.map(renderHeroAction)
+                )}
               </div>
             </motion.div>
           </div>

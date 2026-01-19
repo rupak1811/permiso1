@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Eye,
   Bot,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react';
 
 const ReviewerDashboard = () => {
@@ -21,6 +22,7 @@ const ReviewerDashboard = () => {
   const { socket, on, off } = useSocket();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalProjects: 0,
     pendingReviews: 0,
@@ -30,11 +32,15 @@ const ReviewerDashboard = () => {
   });
   const [recentProjects, setRecentProjects] = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = false) => {
     if (!user) return;
     
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       
       // Fetch projects - API automatically returns assigned + submitted/under_review projects for reviewers
       const projectsResponse = await axios.get('/api/projects?all=true&limit=1000');
@@ -76,20 +82,27 @@ const ReviewerDashboard = () => {
       });
       setRecentProjects([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
+  // Manual refresh handler
+  const handleRefresh = () => {
+    fetchData(false);
+  };
+
   useEffect(() => {
-    fetchData();
+    // Initial load with loading indicator
+    fetchData(true);
     
-    // Refresh every 15 seconds
-    const interval = setInterval(fetchData, 15000);
-    
-    // Listen for project updates via Socket.IO
+    // Listen for project updates via Socket.IO - update silently without loading indicator
     const handleProjectUpdate = () => {
-      console.log('[Dashboard] Project updated, refreshing data...');
-      fetchData();
+      console.log('[Reviewer Dashboard] Project updated, refreshing data silently...');
+      fetchData(false); // Silent update
     };
     
     if (socket) {
@@ -97,7 +110,6 @@ const ReviewerDashboard = () => {
     }
     
     return () => {
-      clearInterval(interval);
       if (socket) {
         off('project_updated', handleProjectUpdate);
       }
@@ -127,9 +139,20 @@ const ReviewerDashboard = () => {
         transition={{ duration: 0.6 }}
         className="glass-card p-6"
       >
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">Reviewer Dashboard</h1>
-          <p className="text-gray-300">Overview of your review activities</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">Reviewer Dashboard</h1>
+            <p className="text-gray-300">Overview of your review activities</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+            aria-label="Refresh"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </motion.div>
 
