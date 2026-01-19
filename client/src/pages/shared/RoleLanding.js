@@ -307,6 +307,7 @@ const RoleLanding = ({ variant = 'user' }) => {
     }
   });
   const [profileLoading, setProfileLoading] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Update forms when user changes
   useEffect(() => {
@@ -429,6 +430,29 @@ const RoleLanding = ({ variant = 'user' }) => {
     );
   };
 
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    
+    const handleClickOutside = (event) => {
+      // Check if click is outside the profile menu container
+      const profileContainer = event.target.closest('.relative');
+      if (!profileContainer) {
+        setShowProfileMenu(false);
+      }
+    };
+    
+    // Add a small delay to avoid closing immediately when opening
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileMenu]);
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 bg-gradient-to-b from-slate-900/70 to-transparent backdrop-blur">
@@ -453,7 +477,60 @@ const RoleLanding = ({ variant = 'user' }) => {
             </Link>
             <nav className="hidden md:flex items-center space-x-3">
               {config.navLinks.map(renderNavLink)}
-              {config.headerButtons?.map((button, idx) => renderButton(button, idx))}
+              {!isAuthenticated && config.headerButtons?.map((button, idx) => renderButton(button, idx))}
+              {isAuthenticated && user && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="ml-1 w-10 h-10 rounded-full bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 text-white flex items-center justify-center font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    aria-label="Profile menu"
+                    title={`${user.name || user.email}`}
+                  >
+                    {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                  </button>
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-2 w-56 glass-card rounded-xl shadow-2xl py-2 z-50">
+                      <div className="px-4 py-3 border-b border-white/10">
+                        <p className="text-sm font-semibold text-white">{user.name || 'User'}</p>
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10 flex items-center space-x-2"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>View Profile</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          setIsEditingProfile(true);
+                          document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10 flex items-center space-x-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span>Edit Profile</span>
+                      </button>
+                      <div className="border-t border-white/10 my-1"></div>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          logout();
+                          window.location.href = '/';
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center space-x-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 onClick={toggleTheme}
                 className="ml-1 px-3 py-2 rounded-lg text-sm bg-white/10 hover:bg-white/20 text-gray-200"
@@ -487,20 +564,62 @@ const RoleLanding = ({ variant = 'user' }) => {
                   });
                 })}
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                {config.headerButtons?.map((button, idx) => {
-                  const buttonElement = renderButton(button, idx);
-                  const originalOnClick = buttonElement.props.onClick;
-                  return React.cloneElement(buttonElement, {
-                    key: `${button.label}-${idx}`,
-                    onClick: (e) => {
-                      originalOnClick?.(e);
+              {!isAuthenticated && (
+                <div className="grid grid-cols-1 gap-2">
+                  {config.headerButtons?.map((button, idx) => {
+                    const buttonElement = renderButton(button, idx);
+                    const originalOnClick = buttonElement.props.onClick;
+                    return React.cloneElement(buttonElement, {
+                      key: `${button.label}-${idx}`,
+                      onClick: (e) => {
+                        originalOnClick?.(e);
+                        setIsMenuOpen(false);
+                      },
+                      className: `${buttonElement.props.className} w-full text-center`
+                    });
+                  })}
+                </div>
+              )}
+              {isAuthenticated && user && (
+                <div className="space-y-2">
+                  <div className="px-4 py-2 border-b border-white/10">
+                    <p className="text-sm font-semibold text-white">{user.name || 'User'}</p>
+                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
                       setIsMenuOpen(false);
-                    },
-                    className: `${buttonElement.props.className} w-full text-center`
-                  });
-                })}
-              </div>
+                      document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10 flex items-center space-x-2 rounded-lg"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>View Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsEditingProfile(true);
+                      document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10 flex items-center space-x-2 rounded-lg"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      logout();
+                      window.location.href = '/';
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center space-x-2 rounded-lg"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
               <button
                 onClick={() => {
                   toggleTheme();
