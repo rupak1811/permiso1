@@ -29,6 +29,7 @@ import {
 import BrandLogo from '../../components/common/BrandLogo';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -282,9 +283,12 @@ const RoleLanding = ({ variant = 'user' }) => {
   const landingPath = roleHomePaths[config.slug] || '/';
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
+  const { socket, on, off } = useSocket();
   const isDark = theme === 'dark';
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -294,6 +298,72 @@ const RoleLanding = ({ variant = 'user' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
+
+  // Fetch notifications for logged-in users
+  const fetchNotifications = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    try {
+      setNotificationsLoading(true);
+      const response = await axios.get('/api/notifications?limit=10');
+      const notificationsData = response.data.notifications || [];
+      
+      // Format notifications with relative time
+      const formattedNotifications = notificationsData.map(notif => {
+        let date;
+        try {
+          if (notif.createdAt?.toDate) {
+            date = notif.createdAt.toDate();
+          } else if (notif.createdAt) {
+            date = new Date(notif.createdAt);
+          } else {
+            date = new Date();
+          }
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            date = new Date();
+          }
+        } catch (error) {
+          date = new Date();
+        }
+        
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        let timestamp = 'Just now';
+        if (diffMins > 0 && diffMins < 60) {
+          timestamp = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0 && diffHours < 24) {
+          timestamp = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else if (diffDays > 0 && diffDays < 7) {
+          timestamp = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else {
+          try {
+            timestamp = date.toLocaleDateString();
+          } catch (error) {
+            timestamp = 'Recently';
+          }
+        }
+
+        return {
+          ...notif,
+          timestamp,
+          title: notif.title || 'Notification',
+          message: notif.message || ''
+        };
+      });
+      setNotifications(formattedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
 
   // Update contact form when user changes
   useEffect(() => {
@@ -305,6 +375,31 @@ const RoleLanding = ({ variant = 'user' }) => {
       }));
     }
   }, [user]);
+
+  // Fetch notifications and listen for updates
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchNotifications();
+      
+      // Listen for new notifications via Socket.IO
+      const handleNotification = () => {
+        console.log('[Landing Page] New notification received, refreshing...');
+        fetchNotifications();
+      };
+      
+      if (socket) {
+        on('notification', handleNotification);
+      }
+      
+      return () => {
+        if (socket) {
+          off('notification', handleNotification);
+        }
+      };
+    } else {
+      setNotifications([]);
+    }
+  }, [isAuthenticated, user, socket]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -668,6 +763,79 @@ const RoleLanding = ({ variant = 'user' }) => {
         <div className="absolute bottom-20 right-10 w-32 h-32 bg-secondary-500/20 rounded-full blur-xl animate-bounce-gentle" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-accent-500/20 rounded-full blur-xl animate-bounce-gentle" style={{ animationDelay: '2s' }} />
       </section>
+
+      {/* Notifications Section - Only show when logged in */}
+      {isAuthenticated && user && (
+        <section className="py-8 relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="glass-card p-3 sm:p-4 max-w-md mx-auto"
+            >
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h2 className="text-sm sm:text-base font-semibold text-white">Notifications</h2>
+                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {notifications.filter(n => !n.isRead).length}
+                </span>
+              </div>
+
+              <div className="max-h-[400px] overflow-y-auto pr-2 space-y-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4b5563 transparent' }}>
+                {notificationsLoading ? (
+                  <div className="text-center py-4 text-gray-400">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto mb-2"></div>
+                    <p className="text-xs">Loading...</p>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="text-center py-4 text-gray-400">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <motion.div
+                      key={notification.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        notification.isRead 
+                          ? 'bg-white/5' 
+                          : 'bg-blue-500/10 border border-blue-500/20'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-2">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
+                          notification.isRead ? 'bg-gray-400' : 'bg-blue-400'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium text-xs break-words leading-tight">
+                            {notification.title}
+                          </h4>
+                          <p className="text-gray-400 text-xs mt-0.5 break-words line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-gray-500 text-xs mt-1">
+                            {notification.timestamp}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+
+              <Link
+                to="/notifications"
+                className="block text-center text-blue-400 hover:text-blue-300 text-xs font-medium mt-3 py-1.5"
+              >
+                View All Notifications
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       <section id="features" className="py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
